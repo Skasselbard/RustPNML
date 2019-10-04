@@ -1,9 +1,10 @@
 mod pnml;
+mod pt_net_package;
 mod pxml;
 mod tests;
 mod trait_impls;
 
-use crate::pnml::{ObjectBase, PNMLName, PNMLVersion, PNMLID};
+use crate::pnml::{ObjectBase, PNMLName, PNMLVersion, PetriError, PNMLID};
 
 // pnml standard: http://cs.au.dk/fileadmin/site_files/cs/research_areas/centers_and_projects/cpn/paper06.pdf
 
@@ -20,6 +21,8 @@ use crate::pnml::{ObjectBase, PNMLName, PNMLVersion, PNMLID};
 pub struct PNMLDocument {
     pub(crate) petri_nets: Vec<PetriNet>,
 }
+
+pub(crate) type Result<T> = std::result::Result<T, PetriError>;
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub struct PetriNetRef(usize);

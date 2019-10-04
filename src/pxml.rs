@@ -1,6 +1,6 @@
 use crate::{
-    pnml::{Label, Node, Object, ObjectBase, Page, Result},
-    PNMLDocument, PNMLName, PetriNet,
+    pnml::{Label, Node, Object, ObjectBase, Page},
+    PNMLDocument, PNMLName, PetriNet, Result,
 };
 use xml;
 use xml::writer::{EmitterConfig, XmlEvent};
@@ -104,18 +104,22 @@ where
             Object::Page(page) => page.start_element(),
         };
         let start_element = start_element.attr("id", &self.id.0);
-        self.name.write_xml(writer)?;
-        if let Some(labels) = &self.labels {
-            for label in labels {
-                panic!();
-            }
-        }
+        // write the start element
         writer.write(start_element)?;
-        // write page content if its a page
-        match &self.object {
-            Object::Page(page) => page.write_xml(writer)?,
-            _ => {}
-        }
+        {
+            // write the contained tags
+            self.name.write_xml(writer)?;
+            if let Some(labels) = &self.labels {
+                for label in labels {
+                    label.write_xml(writer)?;
+                }
+            }
+            // write page content if its a page
+            match &self.object {
+                Object::Page(page) => page.write_xml(writer)?,
+                _ => {}
+            }
+        } // end of internal tags -> write the end element
         writer.write(XmlEvent::end_element())?;
         Ok(())
     }
@@ -138,7 +142,6 @@ where
                 writer.write(XmlEvent::Characters(&mark_count.to_string()))?;
             }
         };
-        writer.write(XmlEvent::end_element())?;
         writer.write(XmlEvent::end_element())?;
         writer.write(XmlEvent::end_element())?;
         Ok(())

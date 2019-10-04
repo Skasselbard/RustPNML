@@ -50,8 +50,6 @@ pub(crate) enum Label {
     PTAnnotation(std::num::NonZeroUsize),
 }
 
-pub(crate) type Result<T> = std::result::Result<T, PetriError>;
-
 pub enum PetriError {
     BipartitionViolation,
     PlaceNotFound,
@@ -231,7 +229,7 @@ impl PetriNet {
         })
     }
 
-    fn obj_to_page_mut(o: &mut ObjectBase) -> Result<&mut Page> {
+    pub(crate) fn obj_to_page_mut(o: &mut ObjectBase) -> Result<&mut Page> {
         const WRONG_OBJECT_MSG: &str = "Object in the sub pages array which is no Page";
         match &mut o.object {
             Object::Page(page) => Ok(page),
@@ -239,7 +237,7 @@ impl PetriNet {
         }
     }
 
-    fn obj_to_page(o: &ObjectBase) -> Result<&Page> {
+    pub(crate) fn obj_to_page(o: &ObjectBase) -> Result<&Page> {
         const WRONG_OBJECT_MSG: &str = "Object in the sub pages array which is no Page";
         match &o.object {
             Object::Page(page) => Ok(page),
@@ -249,7 +247,7 @@ impl PetriNet {
 
     /// searches the referenced page in the net
     /// returns an ObjectBase because there is additional information stored (like the PNMLID)
-    fn get_page_mut(&mut self, page: &PageRef) -> Result<&mut ObjectBase> {
+    pub(crate) fn get_page_mut(&mut self, page: &PageRef) -> Result<&mut ObjectBase> {
         const EMPTY_STACK_MSG: &str = "Invalid PageRef: Stack was empty";
         /// get the sub page with index i from page_base
         fn get_sub_page(page_base: &mut ObjectBase, i: usize) -> Result<&mut ObjectBase> {
@@ -277,7 +275,7 @@ impl PetriNet {
         Ok(page)
     }
 
-    fn get_page(&self, page: &PageRef) -> Result<&ObjectBase> {
+    pub(crate) fn get_page(&self, page: &PageRef) -> Result<&ObjectBase> {
         const EMPTY_STACK_MSG: &str = "Invalid PageRef: Stack was empty";
         /// get the sub page with index i from page_base
         fn get_sub_page(page_base: &ObjectBase, i: usize) -> Result<&ObjectBase> {
@@ -305,7 +303,7 @@ impl PetriNet {
         Ok(page)
     }
 
-    fn get_node_obj_mut(&mut self, node: &NodeRef) -> Result<&mut ObjectBase> {
+    pub(crate) fn get_node_obj_mut(&mut self, node: &NodeRef) -> Result<&mut ObjectBase> {
         let (page_ref, obj_index) = match node {
             NodeRef::PlaceRef { page, obj_index } => (page, obj_index),
             NodeRef::TransitionRef { page, obj_index } => (page, obj_index),
@@ -317,7 +315,7 @@ impl PetriNet {
             .ok_or(PetriError::ObjectNotFound)?)
     }
 
-    fn get_node_obj(&self, node: &NodeRef) -> Result<&ObjectBase> {
+    pub(crate) fn get_node_obj(&self, node: &NodeRef) -> Result<&ObjectBase> {
         let (page_ref, obj_index) = match node {
             NodeRef::PlaceRef { page, obj_index } => (page, obj_index),
             NodeRef::TransitionRef { page, obj_index } => (page, obj_index),
@@ -329,20 +327,30 @@ impl PetriNet {
             .ok_or(PetriError::ObjectNotFound)?)
     }
 
-    fn get_arc_obj_mut(&mut self, arc: &ArcRef) -> Result<&mut ObjectBase> {
+    pub(crate) fn get_arc_obj_mut(&mut self, arc: &ArcRef) -> Result<&mut ObjectBase> {
         let page = PetriNet::obj_to_page_mut(self.get_page_mut(&arc.page)?)?;
-        Ok(page
+        let arc = page
             .objects
             .get_mut(arc.obj_index)
-            .ok_or(PetriError::ObjectNotFound)?)
+            .ok_or(PetriError::ObjectNotFound)?;
+        assert!(match arc.object {
+            Object::Arc { .. } => true,
+            _ => false,
+        });
+        Ok(arc)
     }
 
-    fn get_arc_obj(&self, arc: &ArcRef) -> Result<&ObjectBase> {
+    pub(crate) fn get_arc_obj(&self, arc: &ArcRef) -> Result<&ObjectBase> {
         let page = PetriNet::obj_to_page(self.get_page(&arc.page)?)?;
-        Ok(page
+        let arc = page
             .objects
             .get(arc.obj_index)
-            .ok_or(PetriError::ObjectNotFound)?)
+            .ok_or(PetriError::ObjectNotFound)?;
+        assert!(match arc.object {
+            Object::Arc { .. } => true,
+            _ => false,
+        });
+        Ok(arc)
     }
 }
 
@@ -351,27 +359,6 @@ impl NodeRef {
         let mut obj = net.get_node_obj_mut(self)?;
         obj.name = PNMLName::new(name);
         Ok(self)
-    }
-    ///
-    pub fn add_label(&mut self, net: &mut PetriNet, label: usize) -> Result<&mut Self> {
-        const ERROR: &str = "transitions cannot have a label";
-        match self {
-            NodeRef::PlaceRef { .. } => {
-                let mut obj = net.get_node_obj_mut(self)?;
-                match obj.labels {
-                    None => {
-                        obj.labels = Some(Vec::new());
-                    }
-                    _ => {}
-                };
-                obj.labels
-                    .as_mut()
-                    .expect("this should not happen") // we've just initialized you!
-                    .push(Label::PTMarking(label));
-                Ok(self)
-            }
-            NodeRef::TransitionRef { .. } => Err(PetriError::InvalidData(String::from(ERROR))),
-        }
     }
 
     pub fn get_name<'a>(&'a self, net: &'a PetriNet) -> Result<Option<&'a str>> {
@@ -389,22 +376,12 @@ impl ArcRef {
         obj.name = PNMLName::new(name);
         Ok(self)
     }
-    pub fn label(
-        &mut self,
-        net: &mut PetriNet,
-        label: std::num::NonZeroUsize,
-    ) -> Result<&mut Self> {
-        let mut obj = net.get_arc_obj_mut(self)?;
-        match obj.labels {
-            None => {
-                obj.labels = Some(Vec::new());
-            }
-            _ => {}
-        };
-        obj.labels
-            .as_mut()
-            .expect("this should not happen") // we've just initialized you!
-            .push(Label::PTAnnotation(label));
-        Ok(self)
+
+    pub fn get_name<'a>(&'a self, net: &'a PetriNet) -> Result<Option<&'a str>> {
+        let obj = net.get_arc_obj(self)?;
+        match &obj.name {
+            PNMLName(Some(name)) => Ok(Some(&name)),
+            PNMLName(None) => Ok(None),
+        }
     }
 }
