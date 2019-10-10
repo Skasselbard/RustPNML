@@ -79,8 +79,8 @@ impl PNMLDocument {
         PetriNetRef(self.petri_nets.len() - 1)
     }
 
-    pub fn petri_net_data(&mut self, net: PetriNetRef) -> Option<&mut PetriNet> {
-        self.petri_nets.get_mut(net.0)
+    pub fn petri_net_data(&mut self, net: PetriNetRef) -> Result<&mut PetriNet> {
+        self.petri_nets.get_mut(net.0).ok_or(PetriError::NetNotFound)
     }
 
     pub fn petri_nets(&self) -> Vec<PetriNetRef> {

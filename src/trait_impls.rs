@@ -1,5 +1,5 @@
-use crate::{pnml::*, PNMLName};
 use crate::PetriError;
+use crate::{pnml::*, PNMLName};
 use std::error::Error;
 
 impl std::fmt::Display for PNMLVersion {
@@ -19,6 +19,7 @@ impl Error for PetriError {
             PetriError::TransitionNotFound => "Transition Not Found: There is no corresponding transition in the internal representation",
             PetriError::ObjectNotFound => "Object Not Found: There is no corresponding object in the internal representation",
             PetriError::PageNotFound => "Page Not Found: Could not find (sub)page in the given path",
+            PetriError::NetNotFound => "Net Not Found: Could not find the referenced petri net in the pnml document",
             PetriError::InvalidData(_) => "Invalid Data: Tried to use data in a place where it do not belong",
             PetriError::CorruptedData(_) => "Corrupted Data: There where objects in arrays there they shouldn't be",
             PetriError::XmlWriterError(error) => error.description()

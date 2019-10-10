@@ -1,11 +1,10 @@
-mod pnml;
-mod pt_net_package;
-mod pxml;
+pub mod pnml;
+pub mod pt_net_package;
+pub mod pxml;
 mod tests;
 mod trait_impls;
 
 use crate::pnml::{ObjectBase, PNMLName, PNMLVersion, PNMLID};
-
 // pnml standard: http://cs.au.dk/fileadmin/site_files/cs/research_areas/centers_and_projects/cpn/paper06.pdf
 
 ///
@@ -63,6 +62,7 @@ pub enum PetriError {
     PlaceNotFound,
     TransitionNotFound,
     PageNotFound,
+    NetNotFound,
     ObjectNotFound,
     InvalidData(String),
     CorruptedData(String),
