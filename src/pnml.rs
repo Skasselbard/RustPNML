@@ -50,17 +50,6 @@ pub(crate) enum Label {
     PTAnnotation(std::num::NonZeroUsize),
 }
 
-pub enum PetriError {
-    BipartitionViolation,
-    PlaceNotFound,
-    TransitionNotFound,
-    PageNotFound,
-    ObjectNotFound,
-    InvalidData(String),
-    CorruptedData(String),
-    XmlWriterError(xml::writer::Error),
-}
-
 impl PNMLName {
     pub fn new(name: &str) -> Self {
         PNMLName(Some(name.into()))
@@ -227,6 +216,32 @@ impl PetriNet {
             source: source_ref.clone(),
             sink: sink_ref.clone(),
         })
+    }
+
+    /// Creates a PNML standard RefPlace or RefTrans respectively.
+    ///
+    /// Unlike the NodeRef::* enum variants that are used to look up a position in the
+    /// internal data structure, a RefPlace/RefTrans is an object in the pnml standard,
+    /// that is used as a link to a Place/Transition in another location (e.g. another
+    /// page). The RefPlace/RefTrans represent the same Place/Transition they link to.
+    /// Such a reference is helpful to mention the same Node on different pages (in the
+    /// graphical representation)
+    pub fn add_reference_node(&mut self, reference: &NodeRef, page: &PageRef) -> Result<()> {
+        let ref_obj = self.get_node_obj(reference)?;
+        let ref_id = ref_obj.id.clone();
+        let reference_node = match reference {
+            NodeRef::PlaceRef { .. } => Node::PlaceRef(ref_id, reference.clone()),
+            NodeRef::TransitionRef { .. } => Node::TransitionRef(ref_id, reference.clone()),
+        };
+        let ref_id = ref_obj.id.0.clone();
+        let page = PetriNet::obj_to_page_mut(self.get_page_mut(page)?)?;
+        page.objects.push(ObjectBase {
+            id: PNMLID::new(&format!("{}_ref_o{}", ref_id, page.objects.len())),
+            name: None.into(),
+            labels: None,
+            object: Object::Node(reference_node),
+        });
+        Ok(())
     }
 
     pub(crate) fn obj_to_page_mut(o: &mut ObjectBase) -> Result<&mut Page> {

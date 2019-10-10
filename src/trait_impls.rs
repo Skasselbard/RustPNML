@@ -1,4 +1,5 @@
 use crate::{pnml::*, PNMLName};
+use crate::PetriError;
 use std::error::Error;
 
 impl std::fmt::Display for PNMLVersion {

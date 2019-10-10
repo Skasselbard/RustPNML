@@ -4,7 +4,7 @@ mod pxml;
 mod tests;
 mod trait_impls;
 
-use crate::pnml::{ObjectBase, PNMLName, PNMLVersion, PetriError, PNMLID};
+use crate::pnml::{ObjectBase, PNMLName, PNMLVersion, PNMLID};
 
 // pnml standard: http://cs.au.dk/fileadmin/site_files/cs/research_areas/centers_and_projects/cpn/paper06.pdf
 
@@ -19,10 +19,10 @@ use crate::pnml::{ObjectBase, PNMLName, PNMLVersion, PetriError, PNMLID};
 /// - tool specific information
 #[derive(Debug)]
 pub struct PNMLDocument {
-    pub(crate) petri_nets: Vec<PetriNet>,
+    petri_nets: Vec<PetriNet>,
 }
 
-pub(crate) type Result<T> = std::result::Result<T, PetriError>;
+pub type Result<T> = std::result::Result<T, PetriError>;
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub struct PetriNetRef(usize);
@@ -52,8 +52,19 @@ pub struct ArcRef {
 
 #[derive(Debug)]
 pub struct PetriNet {
-    pub(crate) id: PNMLID,
-    pub(crate) typ: PNMLVersion,
-    pub(crate) name: PNMLName,
-    pub(crate) pages: Vec<ObjectBase>,
+    id: PNMLID,
+    typ: PNMLVersion,
+    name: PNMLName,
+    pages: Vec<ObjectBase>,
+}
+
+pub enum PetriError {
+    BipartitionViolation,
+    PlaceNotFound,
+    TransitionNotFound,
+    PageNotFound,
+    ObjectNotFound,
+    InvalidData(String),
+    CorruptedData(String),
+    XmlWriterError(xml::writer::Error),
 }
